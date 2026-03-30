@@ -24,7 +24,7 @@
 #define BINDING_PHRASE   "BINDPHRASE"  // Must match your ELRS / Backpack setup
 #define PTR_CH_START     1                   // First channel for Pan (Tilt=CH2, Roll=CH3)
 #define DEBUG_MODE                         // Uncomment to enable Serial debug output
-
+#define ESP_NUM_CH       3
 // ======================== PIN ASSIGNMENT =============================
 #define SBUS_TX_PIN      14                   // Serial1 TX GPIO for SBUS output, select any pin
 
@@ -117,21 +117,20 @@ void onEspNowRecv(const esp_now_recv_info_t *info,
 }
 
 //filtering outputs
-uint32_t sanitizeCh(uint32_t localPtrMs) {
+void sanitizeCh(uint16_t *localPtr) {
     
     int base = PTR_CH_START - 1;
 
     for (int i = 0; i < ESP_NUM_CH; i++) {
-        if (localPtrMs[i] < CRSF_CHANNEL_MIN) { localPtrMs[i]=CRSF_CHANNEL_MIN;}
-        if (localPtrMs[i] > CRSF_CHANNEL_MAX) { localPtrMs[i]=CRSF_CHANNEL_MAX;}
+        if (localPtr[i] < CRSF_CHANNEL_MIN) { localPtr[i]=CRSF_CHANNEL_MIN;}
+        if (localPtr[i] > CRSF_CHANNEL_MAX) { localPtr[i]=CRSF_CHANNEL_MAX;}
 
-        if (channels[base + i] == CRSF_CHANNEL_MIN && localPtrMs[i] == CRSF_CHANNEL_MAX) {
-            localPtrMs[i] = CRSF_CHANNEL_MIN;
+        if (channels[base + i] == CRSF_CHANNEL_MIN && localPtr[i] == CRSF_CHANNEL_MAX) {
+            localPtr[i] = CRSF_CHANNEL_MIN;
         }
-        if (channels[base + i] == CRSF_CHANNEL_MAX && localPtrMs[i] == CRSF_CHANNEL_MIN) {
-            localPtrMs[i] = CRSF_CHANNEL_MAX;
+        if (channels[base + i] == CRSF_CHANNEL_MAX && localPtr[i] == CRSF_CHANNEL_MIN) {
+            localPtr[i] = CRSF_CHANNEL_MAX;
         }
-
     }    
 }
 
