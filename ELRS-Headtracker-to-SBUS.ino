@@ -116,6 +116,25 @@ void onEspNowRecv(const esp_now_recv_info_t *info,
     }
 }
 
+//filtering outputs
+uint32_t sanitizeCh(uint32_t localPtrMs) {
+    
+    int base = PTR_CH_START - 1;
+
+    for (int i = 0; i < ESP_NUM_CH; i++) {
+        if (localPtrMs[i] < CRSF_CHANNEL_MIN) { localPtrMs[i]=CRSF_CHANNEL_MIN;}
+        if (localPtrMs[i] > CRSF_CHANNEL_MAX) { localPtrMs[i]=CRSF_CHANNEL_MAX;}
+
+        if (channels[base + i] == CRSF_CHANNEL_MIN && localPtrMs[i] == CRSF_CHANNEL_MAX) {
+            localPtrMs[i] = CRSF_CHANNEL_MIN;
+        }
+        if (channels[base + i] == CRSF_CHANNEL_MAX && localPtrMs[i] == CRSF_CHANNEL_MIN) {
+            localPtrMs[i] = CRSF_CHANNEL_MAX;
+        }
+
+    }    
+}
+
 // ======================== SETUP ======================================
 void setup() {
     DBG_INIT();
@@ -177,7 +196,7 @@ void loop() {
     portEXIT_CRITICAL(&ptrMux);
 
     // Periodically send enable until we receive PTR data
-    bool active = localPtrMs > 0 && (now - localPtrMs) < PTR_TIMEOUT_MS;
+    bool active = localPtrMs > 0 && ((now - localPtrMs) < PTR_TIMEOUT_MS || localPtrMs > now);
     if (!active && (now - lastEnableMs >= 1000)) {
         sendHeadTrackingEnable();
         lastEnableMs = now;
@@ -198,6 +217,7 @@ void loop() {
 
         if (active) {
             int base = PTR_CH_START - 1;
+            sanitizeCh(localPtr);
             channels[base + 0] = localPtr[0];
             channels[base + 1] = localPtr[1];
             channels[base + 2] = localPtr[2];
